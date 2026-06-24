@@ -11,6 +11,11 @@ import { prepare } from './prepare';
 import { redisService } from './services/redis.service';
 import { SocketManager } from './socket/socket.manager';
 import { initEmailWorker } from './queues/email.worker';
+import logger from './common/logger';
+import promClient from 'prom-client';
+
+// Collect default metrics for Prometheus
+promClient.collectDefaultMetrics();
 
 // Define global type augmentation for IO
 declare global {
@@ -52,8 +57,14 @@ app.get('/', (req, res) => {
     res.send('Realtime Server is running (VPS Version)');
 });
 
+// Prometheus metrics endpoint
+app.get('/metrics', async (req, res) => {
+    res.set('Content-Type', promClient.register.contentType);
+    res.end(await promClient.register.metrics());
+});
+
 const server = httpServer.listen(config.port, () => {
-    console.log(`Server is running on port ${config.port}`);
+    logger.info(`Server is running on port ${config.port}`);
 
     // Initialize email worker after server starts (lazy connection)
     initEmailWorker();
@@ -61,25 +72,25 @@ const server = httpServer.listen(config.port, () => {
 
 // Graceful shutdown
 const gracefulShutdown = async (signal: string) => {
-    console.log(`\n${signal} received. Shutting down gracefully...`);
+    logger.info(`\n${signal} received. Shutting down gracefully...`);
 
     server.close(async () => {
-        console.log('HTTP server closed');
+        logger.info('HTTP server closed');
 
         try {
             // Disconnect Redis
             await redisService.disconnect();
-            console.log('Graceful shutdown completed');
+            logger.info('Graceful shutdown completed');
             process.exit(0);
         } catch (error) {
-            console.error('Error during shutdown:', error);
+            logger.error('Error during shutdown:', error as Error);
             process.exit(1);
         }
     });
 
     // Force close after 10 seconds
     setTimeout(() => {
-        console.error('Forced shutdown after timeout.');
+        logger.error('Forced shutdown after timeout.');
         process.exit(1);
     }, 10000);
 };
@@ -88,6 +99,6 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    logger.error('Unhandled Rejection at: ' + promise + ' reason: ' + reason);
     gracefulShutdown('unhandledRejection');
 });
