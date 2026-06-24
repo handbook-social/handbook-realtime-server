@@ -16,18 +16,16 @@ export const config = {
         fromEmail: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
     },
     corsOptions: {
-        origin: [
-            process.env.CLIENT_HOST || 'http://localhost:3000',
-            'http://localhost:3000',
-        ],
+        origin: process.env.CLIENT_HOST
+            ? process.env.CLIENT_HOST.split(',')
+            : ['http://localhost:3000'],
         credentials: true,
     },
     socketOptions: {
         cors: {
-            origin: [
-                process.env.CLIENT_HOST || 'http://localhost:3000',
-                'http://localhost:3000',
-            ],
+            origin: process.env.CLIENT_HOST
+                ? process.env.CLIENT_HOST.split(',')
+                : ['http://localhost:3000'],
             credentials: true,
         },
     },
