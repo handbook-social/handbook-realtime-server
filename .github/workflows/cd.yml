@@ -105,7 +105,7 @@ jobs:
             echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
 
             # Clean up unused Docker resources to free up disk space
-            docker system prune -af
+            docker system prune -af || true
 
             docker pull "${IMAGE_REF}"
 
