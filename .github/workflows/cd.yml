@@ -101,7 +101,12 @@ jobs:
             # Write runtime environment file from GitHub Secret.
             printf "%s" "${SERVER_ENV_FILE}" > .env.production
 
+            # Login to GHCR to pull private image
             echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+
+            # Clean up unused Docker resources to free up disk space
+            docker system prune -af
+
             docker pull "${IMAGE_REF}"
 
             export IMAGE_REF
